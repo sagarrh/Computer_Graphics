@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Bezier Curve</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        canvas {
+            border: 1px solid #000;
+            background-color: #fff;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input, button {
+            padding: 5px;
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="bezierCanvas" width="500" height="500"></canvas>
+        <div class="controls">
+            <button id="addPoint">Add Control Point</button>
+            <input type="number" id="pointIndex" placeholder="Point Index">
+            <input type="number" id="xCoord" placeholder="X Coordinate">
+            <input type="number" id="yCoord" placeholder="Y Coordinate">
+            <button id="updatePoint">Update Control Point</button>
+            <button id="removePoint">Remove Control Point</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('bezierCanvas');
+        const ctx = canvas.getContext('2d');
+        let controlPoints = [
+            { x: 50, y: 250 },
+            { x: 200, y: 50 },
+            { x: 350, y: 450 },
+            { x: 450, y: 250 }
+        ];
+        let draggingPoint = null;
+
+        function drawPoint(x, y, color = 'blue') {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawLine(x1, y1, x2, y2, color = 'gray') {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        }
+
+        function drawBezierCurve() {
+            ctx.beginPath();
+            ctx.moveTo(controlPoints[0].x, controlPoints[0].y);
+            
+            if (controlPoints.length === 2) {
+                ctx.lineTo(controlPoints[1].x, controlPoints[1].y);
+            } else if (controlPoints.length === 3) {
+                ctx.quadraticCurveTo(
+                    controlPoints[1].x, controlPoints[1].y,
+                    controlPoints[2].x, controlPoints[2].y
+                );
+            } else {
+                for (let t = 0; t <= 1; t += 0.01) {
+                    let point = getBezierPoint(t);
+                    ctx.lineTo(point.x, point.y);
+                }
+            }
+
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function getBezierPoint(t) {
+            let x = 0, y = 0;
+            let n = controlPoints.length - 1;
+            for (let i = 0; i <= n; i++) {
+                let factor = binomialCoefficient(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
+                x += factor * controlPoints[i].x;
+                y += factor * controlPoints[i].y;
+            }
+            return { x, y };
+        }
+
+        function binomialCoefficient(n, k) {
+            if (k === 0 || k === n) return 1;
+            return binomialCoefficient(n - 1, k - 1) + binomialCoefficient(n - 1, k);
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw guiding lines
+            for (let i = 0; i < controlPoints.length - 1; i++) {
+                drawLine(controlPoints[i].x, controlPoints[i].y, controlPoints[i+1].x, controlPoints[i+1].y);
+            }
+            
+            // Draw control points
+            controlPoints.forEach(point => drawPoint(point.x, point.y));
+            
+            // Draw Bezier curve
+            drawBezierCurve();
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            controlPoints.forEach((point, index) => {
+                if (Math.abs(point.x - x) < 10 && Math.abs(point.y - y) < 10) {
+                    draggingPoint = index;
+                }
+            });
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (draggingPoint !== null) {
+                const rect = canvas.getBoundingClientRect();
+                controlPoints[draggingPoint].x = e.clientX - rect.left;
+                controlPoints[draggingPoint].y = e.clientY - rect.top;
+                drawScene();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            draggingPoint = null;
+        });
+
+        document.getElementById('addPoint').addEventListener('click', () => {
+            if (controlPoints.length < 10) {
+                controlPoints.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height
+                });
+                drawScene();
+            } else {
+                alert('Maximum number of control points reached (10)');
+            }
+        });
+
+        document.getElementById('updatePoint').addEventListener('click', () => {
+            const index = parseInt(document.getElementById('pointIndex').value);
+            const x = parseInt(document.getElementById('xCoord').value);
+            const y = parseInt(document.getElementById('yCoord').value);
+            
+            if (isNaN(index) || isNaN(x) || isNaN(y)) {
+                alert('Please enter valid numbers for all fields');
+                return;
+            }
+            
+            if (index < 0 || index >= controlPoints.length) {
+                alert('Invalid point index');
+                return;
+            }
+            
+            if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) {
+                alert('Coordinates out of canvas bounds');
+                return;
+            }
+            
+            controlPoints[index] = { x, y };
+            drawScene();
+        });
+
+        document.getElementById('removePoint').addEventListener('click', () => {
+            if (controlPoints.length > 2) {
+                controlPoints.pop();
+                drawScene();
+            } else {
+                alert('Minimum of 2 control points required');
+            }
+        });
+
+        drawScene();
+    </script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bezier Curve Outline Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #000;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload an Image to Generate Bezier Curves</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <canvas id="bezierCanvas" width="500" height="500"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('bezierCanvas');
+        const ctx = canvas.getContext('2d');
+
+        document.getElementById('imageUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(controlPoints => {
+                drawBezierCurve(controlPoints);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function drawBezierCurve(controlPoints) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+
+            // Start at the first control point
+            ctx.moveTo(controlPoints[0][0], controlPoints[0][1]);
+
+            // Use a simple quadratic curve for demonstration
+            for (let i = 0; i < controlPoints.length - 1; i++) {
+                const cp1 = controlPoints[i];
+                const cp2 = controlPoints[i + 1];
+                const midPoint = [
+                    (cp1[0] + cp2[0]) / 2,
+                    (cp1[1] + cp2[1]) / 2
+                ];
+                ctx.quadraticCurveTo(cp1[0], cp1[1], midPoint[0], midPoint[1]);
+            }
+
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw control points for visualization
+            ctx.fillStyle = 'blue';
+            controlPoints.forEach(point => {
+                ctx.fillRect(point[0] - 2, point[1] - 2, 4, 4);
+            });
+        }
+    </script>
+</body>
+</html>
