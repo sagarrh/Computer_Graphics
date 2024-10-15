@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.css": "tailwindcss",
         "Line.C": "cpp",
         "sjl_bcir_Sm0rYEWAhS copy.C": "cpp",
         "sujal_tw_0j4dZZBgN0.C": "cpp",
@@ -9,6 +10,9 @@
         "sjl_bcir_Sm0rYEWAhS.C": "cpp",
         "Midpoint_circle.C": "cpp",
         "sjl_bms_Wqom7GWs5t.C": "cpp",
-        "some.C": "cpp"
+        "some.C": "cpp",
+        "template.C": "cpp",
+        "line_bresenhams.C": "cpp",
+        "fills.C": "cpp"
     }
 }
